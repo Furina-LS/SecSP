@@ -294,6 +294,17 @@ async function loadPasswords() {
 
 async function loadAvatars() {
     try {
+        let localAvatars = {};
+        try {
+            const localData = localStorage.getItem('avatars');
+            if (localData) {
+                localAvatars = JSON.parse(localData);
+                console.log('从localStorage加载头像数据:', Object.keys(localAvatars).length, '个头像');
+            }
+        } catch (localError) {
+            console.warn('从localStorage加载头像数据失败:', localError);
+        }
+
         if (config && config.jsonbin && config.jsonbin.apiKey && config.jsonbin.bins && config.jsonbin.bins.avatars) {
             try {
                 const response = await fetch(`${config.jsonbin.apiUrl}/${config.jsonbin.bins.avatars}/latest`, {
@@ -306,20 +317,34 @@ async function loadAvatars() {
                 
                 if (result.record && result.record.avatars) {
                     avatars = result.record.avatars;
+                    localStorage.setItem('avatars', JSON.stringify(avatars));
                     console.log('从JSONBin成功加载头像数据:', Object.keys(avatars).length, '个头像');
+                } else {
+                    avatars = localAvatars;
                 }
                 
                 return;
             } catch (jsonbinError) {
                 console.warn('从JSONBin加载头像失败:', jsonbinError);
+                avatars = localAvatars;
             }
+        } else {
+            avatars = localAvatars;
         }
         
-        console.log('使用空头像数据');
-        avatars = {};
+        console.log('使用本地头像数据:', Object.keys(avatars).length, '个头像');
     } catch (error) {
         console.error('加载头像数据失败:', error);
-        avatars = {};
+        try {
+            const localData = localStorage.getItem('avatars');
+            if (localData) {
+                avatars = JSON.parse(localData);
+            } else {
+                avatars = {};
+            }
+        } catch (localError) {
+            avatars = {};
+        }
     }
 }
 
@@ -464,6 +489,17 @@ async function savePasswords() {
 
 async function loadMessages() {
     try {
+        let localMessages = [];
+        try {
+            const localData = localStorage.getItem('messages');
+            if (localData) {
+                localMessages = JSON.parse(localData);
+                console.log('从localStorage加载留言数据:', localMessages.length, '条留言');
+            }
+        } catch (localError) {
+            console.warn('从localStorage加载留言数据失败:', localError);
+        }
+
         if (config && config.jsonbin && config.jsonbin.apiKey && config.jsonbin.bins && config.jsonbin.bins.messages) {
             try {
                 const response = await fetch(`${config.jsonbin.apiUrl}/${config.jsonbin.bins.messages}/latest`, {
@@ -476,23 +512,37 @@ async function loadMessages() {
                 
                 if (result.record && result.record.messages) {
                     messages = result.record.messages;
+                    localStorage.setItem('messages', JSON.stringify(messages));
                     console.log('从JSONBin成功加载留言数据:', messages.length, '条留言');
+                } else {
+                    messages = localMessages;
                 }
                 
+                await recalculateMonthlyMessageCount();
                 return;
             } catch (jsonbinError) {
                 console.warn('从JSONBin加载留言失败:', jsonbinError);
+                messages = localMessages;
             }
-        }
-        
-        const stored = localStorage.getItem('messages');
-        if (stored) {
-            messages = JSON.parse(stored);
+        } else {
+            messages = localMessages;
         }
         
         await recalculateMonthlyMessageCount();
+        console.log('使用本地留言数据:', messages.length, '条留言');
     } catch (error) {
         console.error('加载留言失败:', error);
+        try {
+            const localData = localStorage.getItem('messages');
+            if (localData) {
+                messages = JSON.parse(localData);
+            } else {
+                messages = [];
+            }
+        } catch (localError) {
+            messages = [];
+        }
+        await recalculateMonthlyMessageCount();
     }
 }
 
@@ -519,6 +569,17 @@ async function recalculateMonthlyMessageCount() {
 
 async function loadVotes() {
     try {
+        let localVotes = [];
+        try {
+            const localData = localStorage.getItem('votes');
+            if (localData) {
+                localVotes = JSON.parse(localData);
+                console.log('从localStorage加载投票数据:', localVotes.length, '个投票');
+            }
+        } catch (localError) {
+            console.warn('从localStorage加载投票数据失败:', localError);
+        }
+
         if (config && config.jsonbin && config.jsonbin.apiKey && config.jsonbin.bins && config.jsonbin.bins.votes) {
             try {
                 const response = await fetch(`${config.jsonbin.apiUrl}/${config.jsonbin.bins.votes}/latest`, {
@@ -531,21 +592,34 @@ async function loadVotes() {
                 
                 if (result.record && result.record.votes) {
                     votes = result.record.votes;
+                    localStorage.setItem('votes', JSON.stringify(votes));
                     console.log('从JSONBin成功加载投票数据:', votes.length, '个投票');
+                } else {
+                    votes = localVotes;
                 }
                 
                 return;
             } catch (jsonbinError) {
                 console.warn('从JSONBin加载投票失败:', jsonbinError);
+                votes = localVotes;
             }
+        } else {
+            votes = localVotes;
         }
         
-        const stored = localStorage.getItem('votes');
-        if (stored) {
-            votes = JSON.parse(stored);
-        }
+        console.log('使用本地投票数据:', votes.length, '个投票');
     } catch (error) {
         console.error('加载投票失败:', error);
+        try {
+            const localData = localStorage.getItem('votes');
+            if (localData) {
+                votes = JSON.parse(localData);
+            } else {
+                votes = [];
+            }
+        } catch (localError) {
+            votes = [];
+        }
     }
 }
 
