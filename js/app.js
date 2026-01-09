@@ -120,6 +120,18 @@ let monthlyMessageCount = 0;
 let userPoints = {};
 let config = null;
 
+let dataCache = {
+    config: null,
+    passwords: null,
+    avatars: null,
+    messages: null,
+    votes: null,
+    colorSettings: null,
+    lastLoadTime: 0
+};
+
+const CACHE_DURATION = 5 * 60 * 1000;
+
 async function loadConfig() {
     try {
         const response = await fetch('config.json');
@@ -139,12 +151,37 @@ async function loadConfig() {
 
 async function init() {
     await loadConfig();
-    await loadUserData();
-    await loadPasswords();
-    await loadAvatars();
+    
+    const now = Date.now();
+    const shouldUseCache = dataCache.lastLoadTime > 0 && (now - dataCache.lastLoadTime) < CACHE_DURATION;
+    
+    if (shouldUseCache) {
+        console.log('使用缓存数据');
+        if (dataCache.passwords) passwords = dataCache.passwords;
+        if (dataCache.avatars) avatars = dataCache.avatars;
+        if (dataCache.messages) messages = dataCache.messages;
+        if (dataCache.votes) votes = dataCache.votes;
+        if (dataCache.colorSettings && currentUser) {
+            applyColorSettingsToAllPages(dataCache.colorSettings);
+        }
+    } else {
+        console.log('加载新数据');
+        await Promise.all([
+            loadUserData(),
+            loadPasswords(),
+            loadAvatars(),
+            loadMessages(),
+            loadVotes()
+        ]);
+        
+        dataCache.passwords = passwords;
+        dataCache.avatars = avatars;
+        dataCache.messages = messages;
+        dataCache.votes = votes;
+        dataCache.lastLoadTime = now;
+    }
+    
     loadUserState();
-    await loadMessages();
-    await loadVotes();
     await loadColorSettings();
     setupEventListeners();
 }
@@ -189,6 +226,17 @@ async function loadUserData() {
 
 async function loadPasswords() {
     try {
+        let localPasswords = {};
+        try {
+            const localData = localStorage.getItem('passwords');
+            if (localData) {
+                localPasswords = JSON.parse(localData);
+                console.log('从localStorage加载密码数据:', Object.keys(localPasswords).length, '个密码');
+            }
+        } catch (localError) {
+            console.warn('从localStorage加载密码数据失败:', localError);
+        }
+
         if (config && config.jsonbin && config.jsonbin.apiKey && config.jsonbin.bins && config.jsonbin.bins.userData) {
             try {
                 const response = await fetch(`${config.jsonbin.apiUrl}/${config.jsonbin.bins.userData}/latest`, {
@@ -203,7 +251,10 @@ async function loadPasswords() {
                 
                 if (result.record && result.record.passwords) {
                     passwords = result.record.passwords;
+                    localStorage.setItem('passwords', JSON.stringify(passwords));
                     console.log('从JSONBin成功加载密码数据:', Object.keys(passwords).length, '个密码');
+                } else {
+                    passwords = localPasswords;
                 }
                 
                 if (result.record && result.record.userPoints) {
@@ -219,14 +270,25 @@ async function loadPasswords() {
                 return;
             } catch (jsonbinError) {
                 console.warn('从JSONBin加载用户数据失败:', jsonbinError);
+                passwords = localPasswords;
             }
+        } else {
+            passwords = localPasswords;
         }
         
-        console.log('使用空密码数据');
-        passwords = {};
+        console.log('使用本地密码数据:', Object.keys(passwords).length, '个密码');
     } catch (error) {
         console.error('加载密码数据失败:', error);
-        passwords = {};
+        try {
+            const localData = localStorage.getItem('passwords');
+            if (localData) {
+                passwords = JSON.parse(localData);
+            } else {
+                passwords = {};
+            }
+        } catch (localError) {
+            passwords = {};
+        }
     }
 }
 
@@ -349,10 +411,54 @@ async function savePassword(code, password) {
         }
         
         console.log('密码保存到本地存储:', code);
-        alert('密码保存失败，请检查配置文件');
+        alert('密码保存失败，请重试');
     } catch (error) {
         console.error('保存密码失败:', error);
         alert('密码保存失败，请重试');
+    }
+}
+
+async function savePasswords() {
+    try {
+        if (config && config.jsonbin && config.jsonbin.apiKey && config.jsonbin.bins && config.jsonbin.bins.userData) {
+            try {
+                const dataToSave = {
+                    passwords: passwords,
+                    userPoints: userPoints,
+                    monthlyMessageCount: monthlyMessageCount
+                };
+                
+                const response = await fetch(`${config.jsonbin.apiUrl}/${config.jsonbin.bins.userData}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': config.jsonbin.apiKey
+                    },
+                    body: JSON.stringify(dataToSave)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    console.log('密码数据保存到JSONBin成功');
+                    return;
+                } else {
+                    console.error('保存到JSONBin失败:', result);
+                    alert('密码数据保存失败: ' + (result.message || '未知错误'));
+                    return;
+                }
+            } catch (jsonbinError) {
+                console.error('保存到JSONBin失败:', jsonbinError);
+                alert('密码数据保存失败，请检查网络连接');
+                return;
+            }
+        }
+        
+        console.log('密码数据保存到本地存储');
+        alert('密码数据保存失败，请检查配置文件');
+    } catch (error) {
+        console.error('保存密码数据失败:', error);
+        alert('密码数据保存失败，请重试');
     }
 }
 
@@ -1331,6 +1437,7 @@ async function displayVotes() {
                 ${isCreator && vote.status === 'active' ? `<button class="btn btn-secondary" onclick="closeVote(${vote.id})">关闭投票</button>` : ''}
                 ${isCreator && vote.status === 'active' ? `<button class="btn btn-primary" onclick="settleVote(${vote.id})">结算投票</button>` : ''}
                 ${isCreator && vote.status === 'settled' ? `<button class="btn btn-secondary" onclick="clearVoteResult(${vote.id})">清除结果</button>` : ''}
+                ${isCreator && (vote.status === 'closed' || vote.status === 'expired') ? `<button class="btn btn-danger" onclick="deleteVote(${vote.id})">删除投票</button>` : ''}
                 ${currentUser.level === 'Ⅰ' && vote.status === 'active' && !isCreator ? `<button class="btn btn-danger" onclick="vetoVote(${vote.id})">一票否决（消耗25积分）</button>` : ''}
             </div>
         `;
@@ -1548,6 +1655,31 @@ async function vetoVote(voteId) {
     }
 }
 
+async function deleteVote(voteId) {
+    const voteIndex = votes.findIndex(v => v.id === voteId);
+    if (voteIndex === -1) return;
+    
+    const vote = votes[voteIndex];
+    
+    if (vote.creator !== currentUser.code) {
+        alert('只有发起人可以删除投票');
+        return;
+    }
+    
+    if (vote.status === 'active') {
+        alert('只能删除已关闭的投票');
+        return;
+    }
+    
+    if (confirm('确定要删除这个投票吗？删除后无法恢复！')) {
+        votes.splice(voteIndex, 1);
+        localStorage.setItem('votes', JSON.stringify(votes));
+        await saveVotes();
+        displayVotes();
+        alert('投票已删除并同步到所有设备');
+    }
+}
+
 function displayMembers() {
     const membersGridElement = document.getElementById('membersGrid');
     if (!membersGridElement) return;
@@ -1652,9 +1784,48 @@ function uploadAvatar(event) {
         localStorage.setItem(`avatar_${currentUser.code}`, imageData);
         await saveAvatar(currentUser.code, imageData);
         updateAvatar();
-        alert('头像上传成功');
+        alert('头像上传成功并已同步到所有设备');
     };
     reader.readAsDataURL(file);
+}
+
+async function deleteAvatar() {
+    if (!confirm('确定要删除头像吗？删除后无法恢复！')) {
+        return;
+    }
+    
+    delete avatars[currentUser.code];
+    localStorage.removeItem(`avatar_${currentUser.code}`);
+    
+    if (config && config.jsonbin && config.jsonbin.apiKey && config.jsonbin.bins && config.jsonbin.bins.avatars) {
+        try {
+            const dataToSave = {
+                avatars: avatars
+            };
+            
+            const response = await fetch(`${config.jsonbin.apiUrl}/${config.jsonbin.bins.avatars}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': config.jsonbin.apiKey
+                },
+                body: JSON.stringify(dataToSave)
+            });
+            
+            if (response.ok) {
+                console.log('头像删除并同步到JSONBin成功');
+                alert('头像已删除并同步到所有设备');
+            } else {
+                console.error('同步到JSONBin失败');
+                alert('头像删除成功，但同步失败');
+            }
+        } catch (error) {
+            console.error('同步到JSONBin失败:', error);
+            alert('头像删除成功，但同步失败');
+        }
+    }
+    
+    updateAvatar();
 }
 
 async function changePassword() {

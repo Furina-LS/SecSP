@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>二级社党 - 个人信息</title>
     <link rel="stylesheet" href="css/styles.css">
-    <script src="js/app.js?v=3"></script>
+    <script src="js/app.js?v=5"></script>
 </head>
 <body>
     <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
@@ -68,6 +68,7 @@
                 <div class="avatar-preview" id="avatarPreview"></div>
                 <input type="file" id="avatarInput" accept="image/*" capture="user" onchange="uploadAvatar(event)">
                 <label for="avatarInput">选择头像</label>
+                <button class="btn btn-danger" onclick="deleteAvatar()">删除头像</button>
             </div>
         </div>
         
