@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二级社党 - 登录</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>二级社党</h2>
+            <input type="text" id="codeInput" placeholder="请输入完整代号">
+            <div id="passwordSection" style="display: none;">
+                <input type="password" id="passwordInput" placeholder="请输入密码">
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="rememberMe">
+                <label for="rememberMe">保留登录信息</label>
+            </div>
+            <button onclick="login()">登录</button>
+        </div>
+    </div>
+    
+    <script src="js/app.js?v=3"></script>
+    <script>
+        (async function() {
+            await init();
+        })();
+    </script>
+</body>
+</html>

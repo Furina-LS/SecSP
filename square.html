@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二级社党 - 交流广场</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/app.js?v=3"></script>
+</head>
+<body>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <div class="sidebar">
+        <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+        <h2>二级社党</h2>
+        <nav>
+            <ul>
+                <li><a href="home.html">首页</a></li>
+                <li><a href="square.html" class="active">交流广场</a></li>
+                <li><a href="profile.html">个人信息</a></li>
+                <li><a href="personalization.html">个性化</a></li>
+                <li id="membersNav"><a href="members.html">查看人员</a></li>
+                <li><a href="#" onclick="logout()">退出登录</a></li>
+                <li><button class="easter-egg-btn" onclick="showEasterEgg()">千万别点</button></li>
+            </ul>
+        </nav>
+    </div>
+    
+    <div class="content">
+        <div class="vote-section" id="voteSection">
+            <h3>发起投票</h3>
+            <div class="create-vote-form" id="createVoteForm">
+                <input type="text" id="voteTitle" placeholder="投票标题">
+                <div class="vote-options-container" id="voteOptionsContainer">
+                    <div class="vote-option-item">
+                        <input type="text" class="vote-option-input" placeholder="选项1">
+                    </div>
+                    <div class="vote-option-item">
+                        <input type="text" class="vote-option-input" placeholder="选项2">
+                    </div>
+                </div>
+                <div class="vote-options-buttons">
+                    <button class="btn btn-secondary" onclick="addVoteOption()">+ 添加选项</button>
+                    <button class="btn btn-secondary" id="removeOptionButton" onclick="removeVoteOption()" disabled>- 减少选项</button>
+                </div>
+                <button class="btn btn-primary" onclick="createVote()">创建投票（消耗50积分）</button>
+            </div>
+        </div>
+        
+        <div class="vote-section">
+            <h3>投票列表</h3>
+            <div id="voteList"></div>
+        </div>
+        
+        <div class="message-section">
+            <h3>发布留言</h3>
+            <div class="message-info">
+                <span id="messageCount"></span>
+                <span>每条留言最多300字</span>
+            </div>
+            <textarea class="message-input" id="messageInput" placeholder="请输入留言内容..."></textarea>
+            <button class="btn btn-primary" id="postMessageButton" onclick="postMessage()">发布留言</button>
+        </div>
+        
+        <div class="message-section">
+            <h3>留言列表</h3>
+            <div class="message-list" id="messageList"></div>
+        </div>
+    </div>
+    
+    <div class="easter-egg-modal" id="easterEggModal">
+        <div class="easter-egg-modal-content">
+            <h3>⚠️ 警告</h3>
+            <p>这可能会造成不可逆转的损伤！！！</p>
+            <div class="easter-egg-buttons">
+                <button class="easter-egg-confirm-red" onclick="confirmEasterEgg()">确定</button>
+                <button class="easter-egg-confirm-blue" onclick="confirmEasterEgg()">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        window.onload = async function() {
+            await init();
+            if (!checkLogin()) return;
+            
+            setActiveNav('square.html');
+            updateUI();
+            await displayMessages();
+            await displayVotes();
+            updateRemoveOptionButton();
+            
+            if (currentUser.level !== 'Ⅰ') {
+                const voteSection = document.getElementById('voteSection');
+                if (voteSection) {
+                    voteSection.style.display = 'none';
+                }
+                
+                const messageButton = document.getElementById('postMessageButton');
+                if (messageButton) {
+                    messageButton.textContent = '发布留言（消耗5积分）';
+                }
+            }
+        };
+        
+        function showEasterEgg() {
+            document.getElementById('easterEggModal').classList.add('active');
+        }
+        
+        function confirmEasterEgg() {
+            window.open('https://www.bilibili.com/video/BV1he4y1w7wB?t=12.4', '_blank');
+            document.getElementById('easterEggModal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>

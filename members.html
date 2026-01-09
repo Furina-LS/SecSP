@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二级社党 - 查看人员</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/app.js?v=3"></script>
+</head>
+<body>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <div class="sidebar">
+        <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+        <h2>二级社党</h2>
+        <nav>
+            <ul>
+                <li><a href="home.html">首页</a></li>
+                <li><a href="square.html">交流广场</a></li>
+                <li><a href="profile.html">个人信息</a></li>
+                <li><a href="personalization.html">个性化</a></li>
+                <li id="membersNav"><a href="members.html" class="active">查看人员</a></li>
+                <li><a href="#" onclick="logout()">退出登录</a></li>
+                <li><button class="easter-egg-btn" onclick="showEasterEgg()">千万别点</button></li>
+            </ul>
+        </nav>
+    </div>
+    
+    <div class="content">
+        <div class="members-section">
+            <h3>所有人员</h3>
+            <div class="members-grid" id="membersGrid"></div>
+        </div>
+    </div>
+    
+    <div class="easter-egg-modal" id="easterEggModal">
+        <div class="easter-egg-modal-content">
+            <h3>⚠️ 警告</h3>
+            <p>这可能会造成不可逆转的损伤！！！</p>
+            <div class="easter-egg-buttons">
+                <button class="easter-egg-confirm-red" onclick="confirmEasterEgg()">确定</button>
+                <button class="easter-egg-confirm-blue" onclick="confirmEasterEgg()">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        window.onload = async function() {
+            await init();
+            if (!checkLogin()) return;
+            
+            setActiveNav('members.html');
+            updateUI();
+            displayMembers();
+        };
+        
+        function showEasterEgg() {
+            document.getElementById('easterEggModal').classList.add('active');
+        }
+        
+        function confirmEasterEgg() {
+            window.open('https://www.bilibili.com/video/BV1he4y1w7wB?t=12.4', '_blank');
+            document.getElementById('easterEggModal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>

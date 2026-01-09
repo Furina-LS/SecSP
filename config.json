@@ -1,0 +1,20 @@
+{
+  "jsonbin": {
+    "apiKey": "$2a$10$VhIyWDWmetyzCKGEcRanlu8fDlbrZZ3gBJlkrztmANJdo5Gmh41y2",
+    "apiUrl": "https://api.jsonbin.io/v3/b",
+    "bins": {
+      "avatars": "6960e55bae596e708fcff585",
+      "messages": "6960e62843b1c97be92428c3",
+      "votes": "6960e67243b1c97be924293d",
+      "userData": "6960e6c943b1c97be92429de",
+      "colorSettings": "6960e70243b1c97be9242a4e"
+    },
+    "binNames": {
+      "avatars": "profile picture",
+      "messages": "messages",
+      "votes": "votes",
+      "userData": "user Data",
+      "colorSettings": "color Settings"
+    }
+  }
+}
