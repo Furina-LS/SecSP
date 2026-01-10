@@ -167,7 +167,6 @@ async function init() {
     } else {
         console.log('加载新数据');
         await Promise.all([
-            loadUserData(),
             loadPasswords(),
             loadAvatars(),
             loadMessages(),
@@ -186,57 +185,8 @@ async function init() {
     setupEventListeners();
 }
 
-async function loadUserData() {
-    try {
-        let response;
-        let text;
-        
-        try {
-            response = await fetch('Information/user_data.html?t=' + Date.now());
-            text = await response.text();
-            
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text, 'text/html');
-            const userElements = doc.querySelectorAll('.user');
-            
-            allUsers = [];
-            userElements.forEach(element => {
-                allUsers.push({
-                    code: element.getAttribute('data-code'),
-                    name: element.getAttribute('data-name'),
-                    gender: element.getAttribute('data-gender'),
-                    level: element.getAttribute('data-level'),
-                    nativePlace: element.getAttribute('data-native-place'),
-                    points: parseInt(element.getAttribute('data-points')) || 0,
-                    position: element.getAttribute('data-position') || '',
-                    comment: element.getAttribute('data-comment') || ''
-                });
-            });
-            
-            console.log('成功加载用户数据:', allUsers.length, '个用户');
-        } catch (fetchError) {
-            console.warn('从文件加载失败，使用内置用户数据:', fetchError);
-            console.log('使用内置用户数据:', allUsers.length, '个用户');
-        }
-    } catch (error) {
-        console.error('加载用户数据失败:', error);
-        console.log('使用内置用户数据:', allUsers.length, '个用户');
-    }
-}
-
 async function loadPasswords() {
     try {
-        let localPasswords = {};
-        try {
-            const localData = localStorage.getItem('passwords');
-            if (localData) {
-                localPasswords = JSON.parse(localData);
-                console.log('从localStorage加载密码数据:', Object.keys(localPasswords).length, '个密码');
-            }
-        } catch (localError) {
-            console.warn('从localStorage加载密码数据失败:', localError);
-        }
-
         if (config && config.jsonbin && config.jsonbin.apiKey && config.jsonbin.bins && config.jsonbin.bins.userData) {
             try {
                 const response = await fetch(`${config.jsonbin.apiUrl}/${config.jsonbin.bins.userData}/latest`, {
@@ -254,7 +204,7 @@ async function loadPasswords() {
                     localStorage.setItem('passwords', JSON.stringify(passwords));
                     console.log('从JSONBin成功加载密码数据:', Object.keys(passwords).length, '个密码');
                 } else {
-                    passwords = localPasswords;
+                    passwords = {};
                 }
                 
                 if (result.record && result.record.userPoints) {
@@ -270,13 +220,17 @@ async function loadPasswords() {
                 return;
             } catch (jsonbinError) {
                 console.warn('从JSONBin加载用户数据失败:', jsonbinError);
-                passwords = localPasswords;
             }
-        } else {
-            passwords = localPasswords;
         }
         
-        console.log('使用本地密码数据:', Object.keys(passwords).length, '个密码');
+        console.log('从localStorage加载密码数据');
+        const localData = localStorage.getItem('passwords');
+        if (localData) {
+            passwords = JSON.parse(localData);
+            console.log('从localStorage成功加载密码数据:', Object.keys(passwords).length, '个密码');
+        } else {
+            passwords = {};
+        }
     } catch (error) {
         console.error('加载密码数据失败:', error);
         try {
